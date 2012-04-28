@@ -80,7 +80,7 @@ def post_form(request):
         title = request.POST.get(u'title', '')
         url = request.POST.get(u'url', '')
 
-        if len(comment) <= 100:
+        if len(comment) > 100:
             error = u'コメントが長過ぎます。100文字以内で入力してください'
         else:
             if len(comment) > 0:
