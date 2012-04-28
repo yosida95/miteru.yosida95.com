@@ -32,7 +32,7 @@ def login(request):
         authorization_url = oauth.get_authorization_url()
         request.session[REQUEST_TOKEN_SESSION_KEY] = (
             oauth.request_token.key, oauth.request_token.secret)
-    except tweepy.TweepError, why:
+    except tweepy.TweepError:
         raise HTTPServerError()
     else:
         return HTTPFound(location=authorization_url)
@@ -42,7 +42,8 @@ def login(request):
              renderer='authorization.jinja2')
 def authenticate(request):
     try:
-        request_key, request_secret = request.session[REQUEST_TOKEN_SESSION_KEY]
+        request_key, request_secret = request.session[
+            REQUEST_TOKEN_SESSION_KEY]
     except KeyError:
         raise HTTPForbidden()
     else:
@@ -58,7 +59,7 @@ def authenticate(request):
     except tweepy.TweepError:
         raise HTTPUnauthorized()
     else:
-        post_url ='%s?access_key=%s&access_secret=%s' % (
+        post_url = '%s?access_key=%s&access_secret=%s' % (
             request.route_url(u'post'),
             oauth.access_token.key, oauth.access_token.secret)
         return {u'post_url': post_url}
@@ -73,27 +74,33 @@ def post_form(request):
 
         oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
         oauth.set_access_token(
-            request.POST.get(u'access_key'), request.POST.get(u'access_secret'))
-        try:
-            comment = request.POST.get(u'comment')
-            title = request.POST.get(u'title')
-            url = request.POST.get(u'url')
+            request.POST.get(u'access_key'),
+            request.POST.get(u'access_secret'))
+        comment = request.POST.get(u'comment', '')
+        title = request.POST.get(u'title', '')
+        url = request.POST.get(u'url', '')
 
-            if request.POST.get(u'comment'):
-                text = u'%s - %s: %s #miteru' % (
-                    comment, title[:108 - len(comment)], url)
-            else:
-                text = u'%s: %s #miteru' % (
-                    title[:110 - len(comment)], url)
-
-            api = tweepy.API(auth_handler=oauth)
-            api.update_status(text.encode(u'utf8'))
-        except tweepy.TweepError:
-            raise HTTPServerError()
+        if len(comment) <= 100:
+            error = u'コメントが長過ぎます。100文字以内で入力してください'
         else:
-            return {u'posted': True}
+            if len(comment) > 0:
+                text = '%s - %s: %s #miteru' % (
+                    comment, title[:107 - len(comment)], url)
+            else:
+                text = '%s: %s #miteru' % (title[:110], url)
 
-    return {u'posted': False, u'access_key': request.GET.get(u'access_key'),
-            u'access_secret': request.GET.get(u'access_secret'),
-            u'title': request.GET.get(u'title', ''),
-            u'url': request.GET.get(u'url', '')}
+            try:
+                api = tweepy.API(auth_handler=oauth)
+                api.update_status(text.encode(u'utf8'))
+            except tweepy.TweepError:
+                raise HTTPServerError()
+            else:
+                return {u'posted': True}
+    else:
+        error = u''
+
+    return {u'posted': False, u'access_key': request.params.get(u'access_key'),
+            u'access_secret': request.params.get(u'access_secret'),
+            u'title': request.params.get(u'title', ''),
+            u'url': request.params.get(u'url', ''),
+            u'error': error}

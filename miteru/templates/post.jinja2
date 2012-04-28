@@ -1,31 +1,35 @@
-<?xml version="1.0" encoding="UTF-8"?> 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja"> 
-<head> 
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /> 
-<meta http-equiv="Content-Style-Type" content="text/css" /> 
-<meta name="copyright" content="Copyright (C) yosida95 All Rights Reserved." /> 
-<meta name="Author" content="yosida95" /> 
-<meta name="robots" content="None" />
-<title>見てるなう</title> 
-</head> 
-<body> 
-{% if posted %}
-    <p>投稿しました</p>
-    <script type="text/javascript">
-        (function(){setTimeout(windows.close, 3000);})();
-    </script>
-{% else %}
-    <form method="post" action="{{ request.route_path('post') }}">
-        <input type="text" name="comment" value="" />
-        <input type="hidden" name="access_key" value="{{ access_key }}" />
-        <input type="hidden" name="access_secret" value="{{ access_secret }}" />
-        <input type="hidden" name="title" value="{{ title }}" />
-        <input type="hidden" name="url" value="{{ url }}" />
-        <input type="hidden" name="csrf_token" value="{{ request.session.get_csrf_token() }}" />
-        <input type="submit" value="投稿" />
-    </form>
-{% endif %}
-<p>Copyright (C) <a href="http://yosida95.com/">yosida95</a> All Rights Reserved.</a>
-</body>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta http-equiv="Content-Style-Type" content="text/css" />
+        <meta name="copyright" content="Copyright (C) yosida95 All Rights Reserved." />
+        <meta name="Author" content="yosida95" />
+        <meta name="robots" content="None" />
+        <title>見てるなう(仮)</title>
+    </head>
+    <body style="text-align: center;">
+        {% if posted %}
+        <p>投稿しました</p>
+        <script type="text/javascript">
+            setTimeout(window.close, 1500)
+        </script>
+        {% else %}
+        <form method="post" action="{{ request.route_path('post') }}">
+            {% if error %}
+            {% endif %}
+            <p style="overflow: hidden;">{{ title }}: {{ url}}</p>
+            コメント: <input type="text" name="comment" value="" style="width: 80%;"/><br />
+            <span style="color: #FF0000;">{{ error }}</span><br />
+            <input type="hidden" name="access_key" value="{{ access_key }}" />
+            <input type="hidden" name="access_secret" value="{{ access_secret }}" />
+            <input type="hidden" name="title" value="{{ title }}" />
+            <input type="hidden" name="url" value="{{ url }}" />
+            <input type="hidden" name="csrf_token" value="{{ request.session.get_csrf_token() }}" />
+            <input type="submit" value="投稿" />
+        </form>
+        {% endif %}
+        <p>Copyright (C) <a href="http://yosida95.com/">yosida95</a> All Rights Reserved.</a>
+    </body>
 </html>
