@@ -1,6 +1,8 @@
 #-*- coding: utf-8 -*-
 
 import tweepy
+import json
+from pyramid.response import Response
 from pyramid.i18n import TranslationStringFactory
 from pyramid.view import view_config
 from pyramid.httpexceptions import (
@@ -81,7 +83,8 @@ def post_form(request):
         url = request.POST.get(u'url', '')
 
         if len(comment) > 100:
-            error = u'コメントが長過ぎます。100文字以内で入力してください'
+            result, redo, message = False, True, u'コメントが長過ぎます。100文字未満で入力してください。'
+            redo = True
         else:
             if len(comment) > 0:
                 text = '%s - %s: %s #miteru' % (
@@ -92,15 +95,19 @@ def post_form(request):
             try:
                 api = tweepy.API(auth_handler=oauth)
                 api.update_status(text.encode(u'utf8'))
-            except tweepy.TweepError:
-                raise HTTPServerError()
+            except tweepy.TweepError, why:
+                result, redo, message = (
+                    False, False, u'投稿に失敗しました: %s' % (str(why), ))
             else:
-                return {u'posted': True}
-    else:
-        error = u''
+                result, redo, message = True, False, u'投稿しました'
 
-    return {u'posted': False, u'access_key': request.params.get(u'access_key'),
+        return Response(
+            body=json.dumps({
+                u'result': result, u'redo': redo, u'message': message}),
+            status_int=200)
+
+    return {u'access_key': request.params.get(u'access_key'),
             u'access_secret': request.params.get(u'access_secret'),
             u'title': request.params.get(u'title', ''),
             u'url': request.params.get(u'url', ''),
-            u'error': error}
+           }

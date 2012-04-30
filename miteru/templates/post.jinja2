@@ -4,32 +4,34 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <meta http-equiv="Content-Style-Type" content="text/css" />
+        <link href="/static/post.css" rel="stylesheet" />
+        <meta http-equiv="content-script-type" content="text/javascript" />
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
         <meta name="copyright" content="Copyright (C) yosida95 All Rights Reserved." />
         <meta name="Author" content="yosida95" />
         <meta name="robots" content="None" />
         <title>見てるなう(仮)</title>
-    </head>
-    <body style="text-align: center;">
-        {% if posted %}
-        <p>投稿しました</p>
         <script type="text/javascript">
-            setTimeout(window.close, 1500)
+            $(document).ready(function(){$("#post_form input[type='text']").focus(function(){if(this.value==this.title){this.value="";}this.style.color='#000';}).blur(function(){if(this.value==""){this.value=this.title;this.style.color='#808080';}else{this.style.color='#000';}}).css('color','#808080')[0].focus();$("#post_form").submit(function(){$('#post_form')[0].comment.value=($('#post_form')[0].comment.value==$('#post_form')[0].comment.title)?"":$('#post_form')[0].comment.value;$('#message').css('color','#000');$('#message').html('投稿中&hellip;&hellip;');$('#post_form').hide();$.post('/post',$('#post_form').serialize(),function(data){if(data.redo){$('#message').css('color','#f00');$('#message').text(data.message);$('#post_form').show();}else{if(!data.result){$('#message').css('color','#f00');}else{$('#message').css('color','#000');}$('#message').text(data.message);setTimeout(window.close,1500);}},'json');return false;});});
         </script>
-        {% else %}
-        <form method="post" action="{{ request.route_path('post') }}">
-            {% if error %}
+    </head>
+    <body>
+        <h1>見てるなう(仮)</h1>
+        <div id="message"></div>
+        <form id="post_form" method="post" action="{{ request.route_path('post') }}">
+            {% if title %}
+            <p>{{ title }}</p>
+            {% else %}
+            <p>{{ url }}</p>
             {% endif %}
-            <p style="overflow: hidden;">{{ title }}: {{ url}}</p>
-            コメント: <input type="text" name="comment" value="" style="width: 80%;"/><br />
-            <span style="color: #FF0000;">{{ error }}</span><br />
             <input type="hidden" name="access_key" value="{{ access_key }}" />
             <input type="hidden" name="access_secret" value="{{ access_secret }}" />
             <input type="hidden" name="title" value="{{ title }}" />
             <input type="hidden" name="url" value="{{ url }}" />
             <input type="hidden" name="csrf_token" value="{{ request.session.get_csrf_token() }}" />
-            <input type="submit" value="投稿" />
+            <input type="text" name="comment" title="コメント" value="コメント" />
+            <button type="submit" value="投稿">投稿</button>
         </form>
-        {% endif %}
         <p>Copyright (C) <a href="http://yosida95.com/">yosida95</a> All Rights Reserved.</a>
     </body>
 </html>

@@ -10,9 +10,10 @@
         <title>見てるなう(仮)</title>
     </head>
     <body style="text-align: center;">
-            <h1>ログイン完了</h1>
-            <p><a href="javascript:(function(){var url = '{{ post_url }}&amp;title=' + encodeURIComponent(document.title) + '&amp;url=' + encodeURIComponent(location.href);window.open(url, undefined, 'width=530, height=300, menubar=no, toolbar=no, scrollbars=yes');})();">[見てるなう]</a></p>
-            <p>このブックマークレットをブックマークに保存することで、いつでもどこでも見てるなうできます</p>
-            <p>Copyright (C) <a href="http://yosida95.com/">yosida95</a> All Rights Reserved.</a>
+        <h1>ログイン完了</h1>
+        <p><a href="javascript:(function(){window.open('{{ post_url }}&amp;title='+encodeURIComponent(document.title)+'&amp;url='+encodeURIComponent(location.href),undefined,'width=530,height=300,menubar=no,toolbar=no,scrollbars=yes');})();">[見てるなう]</a>&nbsp;
+           (<input type="text" readonly="readonly" value="javascript:(function(){window.open('{{ post_url }}&amp;title='+encodeURIComponent(document.title)+'&amp;url='+encodeURIComponent(location.href),undefined,'width=530,height=300,menubar=no,toolbar=no,scrollbars=yes');})();" />)</p>
+        <p>このブックマークレットをブックマークに保存することで、いつでもどこでも見てるなうできます</p>
+        <p>Copyright (C) <a href="http://yosida95.com/">yosida95</a> All Rights Reserved.</a>
     </body>
 </html>

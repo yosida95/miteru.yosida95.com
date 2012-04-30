@@ -1,0 +1,26 @@
+body {
+    width: 90%;
+    margin: auto;
+    text-align: center;
+}
+
+#message {
+    margin: 2% 0;
+}
+
+#post_form > p {
+    margin: 0;
+    padding: 0;
+    text-align: left;
+    line-height: 1.5;
+}
+
+#post_form input[type='text'] {
+    width: 60%;
+}
+
+#post_form button[type='submit'] {
+    width: 20%;
+    background-color: #f0f0f0;
+    border: solid 1px #808080;
+}
