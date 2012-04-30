@@ -2,6 +2,8 @@
 
 import tweepy
 import json
+from urllib import urlencode, urlopen
+from urlparse import urlunparse
 from pyramid.response import Response
 from pyramid.i18n import TranslationStringFactory
 from pyramid.view import view_config
@@ -19,6 +21,21 @@ from constants import (
 
 
 _ = TranslationStringFactory(u'miteru')
+
+
+def uxnu_shorten(url):
+    query = [('url', url)]
+    req_url = urlunparse(
+        ['http', 'ux.nu', '/api/short', '', urlencode(query), ''])
+    result = urlopen(req_url)
+    if 200 <= result.code < 300:
+        short = json.loads(result.read())['data']['url']
+    elif 400 <= result.code < 500:
+        raise Exception()
+    else:
+        short = url
+
+    return short
 
 
 @view_config(route_name='homepage', request_method='GET',
@@ -83,23 +100,29 @@ def post_form(request):
         url = request.POST.get(u'url', '')
 
         if len(comment) > 100:
-            result, redo, message = False, True, u'コメントが長過ぎます。100文字未満で入力してください。'
+            result, redo, message = (
+                False, True, u'コメントが長過ぎます。100文字未満で入力してください。')
             redo = True
         else:
-            if len(comment) > 0:
-                text = '%s - %s: %s #miteru' % (
-                    comment, title[:107 - len(comment)], url)
-            else:
-                text = '%s: %s #miteru' % (title[:110], url)
-
             try:
-                api = tweepy.API(auth_handler=oauth)
-                api.update_status(text.encode(u'utf8'))
-            except tweepy.TweepError, why:
-                result, redo, message = (
-                    False, False, u'投稿に失敗しました: %s' % (str(why), ))
+                url = uxnu_shorten(url)
+            except Exception:
+                result, redo, message = False, False, u'有効なURLではありません。'
             else:
-                result, redo, message = True, False, u'投稿しました'
+                if len(comment) > 0:
+                    text = '%s - %s: %s #miteru' % (
+                        comment, title[:107 - len(comment)], url)
+                else:
+                    text = '%s: %s #miteru' % (title[:110], url)
+
+                try:
+                    api = tweepy.API(auth_handler=oauth)
+                    api.update_status(text.encode(u'utf8'))
+                except tweepy.TweepError, why:
+                    result, redo, message = (
+                        False, False, u'投稿に失敗しました: %s' % (str(why), ))
+                else:
+                    result, redo, message = True, False, u'投稿しました'
 
         return Response(
             body=json.dumps({
