@@ -1,5 +1,6 @@
 #-*- coding: utf-8 -*-
 
+import re
 import tweepy
 import json
 from urllib import urlencode, urlopen
@@ -84,53 +85,64 @@ def authenticate(request):
         return {u'post_url': post_url}
 
 
-@view_config(route_name='post', request_method=['GET', u'POST'],
+@view_config(route_name='post', request_method=[u'GET', u'POST'],
              renderer=u'post.jinja2')
-def post_form(request):
+def post(request):
+    url = request.params.get(u'url', u'')
+    title = request.params.get(u'title', u'')
+    access_key = request.params.get(u'access_key', u'')
+    access_secret = request.params.get(u'access_secret', u'')
+
     if request.method == u'POST':
-        if request.POST.get(u'csrf_token') != request.session.get_csrf_token():
-            raise HTTPForbidden()
+        csrf_token = request.POST.get(u'csrf_token', u'')
+        comment = request.POST.get(u'comment', u'')
+        max_title_length = 110 if len(comment) == 0 else 107 - len(comment)
 
         oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-        oauth.set_access_token(
-            request.POST.get(u'access_key'),
-            request.POST.get(u'access_secret'))
-        comment = request.POST.get(u'comment', '')
-        title = request.POST.get(u'title', '')
-        url = request.POST.get(u'url', '')
+        oauth.set_access_token(access_key.encode(u'utf-8'),
+                               access_secret.encode(u'utf-8'))
 
-        if len(comment) > 100:
-            result, redo, message = (
-                False, True, u'コメントが長過ぎます。100文字未満で入力してください。')
-            redo = True
-        else:
-            try:
+        try:
+            if csrf_token != request.session.get_csrf_token():
+                raise Exception(u'不正なリクエストです。', False)
+
+            if re.match(r'^https?://.+$', url):
                 url = uxnu_shorten(url)
-            except Exception:
-                result, redo, message = False, False, u'有効なURLではありません。'
             else:
-                if len(comment) > 0:
-                    text = '%s - %s: %s #miteru' % (
-                        comment, title[:107 - len(comment)], url)
-                else:
-                    text = '%s: %s #miteru' % (title[:110], url)
+                raise Exception(u'不正なURLです。', False)
 
-                try:
-                    api = tweepy.API(auth_handler=oauth)
-                    api.update_status(text.encode(u'utf8'))
-                except tweepy.TweepError, why:
-                    result, redo, message = (
-                        False, False, u'投稿に失敗しました: %s' % (str(why), ))
-                else:
-                    result, redo, message = True, False, u'投稿しました'
+            title = u'(No Title)' if len(title) == 0 else title
+            if len(title) > max_title_length:
+                title = title[:max_title_length - 1] + u'…'
 
-        return Response(
-            body=json.dumps({
-                u'result': result, u'redo': redo, u'message': message}),
-            status_int=200)
+            if len(comment) > 100:
+                raise Exception(u'コメントが長過ぎます。100字以内で入力してください。', True)
+        except Exception, why:
+            successful = False
+            message, redo = why.args
+        else:
+            if len(comment) == 0:
+                text = u'%s: %s #miteru' % (title, url)
+            else:
+                text = u'%s - %s: %s #miteru' % (comment, title, url)
 
-    return {u'access_key': request.params.get(u'access_key'),
-            u'access_secret': request.params.get(u'access_secret'),
-            u'title': request.params.get(u'title', ''),
-            u'url': request.params.get(u'url', ''),
-           }
+            try:
+                api = tweepy.API(oauth)
+                api.update_status(text.encode('utf-8'))
+            except tweepy.TweepError, why:
+                successful, redo = False, False
+                message = u'投稿に失敗しました: %s' % (unicode(why), )
+            else:
+                successful, redo = True, False
+                message = u'投稿しました'
+
+        body = json.dumps({
+            u'result': successful,
+            u'redo': redo,
+            u'message': message,
+        })
+        return Response(body, content_type='application/json')
+    else:
+        return {u'url': url, u'title': title,
+                u'access_key': access_key, u'access_secret': access_secret,
+               }
