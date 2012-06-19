@@ -1,19 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-        <meta http-equiv="Content-Style-Type" content="text/css" />
-        <meta name="copyright" content="Copyright (C) yosida95 All Rights Reserved." />
-        <meta name="Author" content="yosida95" />
-        <meta name="robots" content="None" />
-        <title>見てるなう(仮)</title>
-    </head>
-    <body style="text-align: center;">
-        <h1>ログイン完了</h1>
-        <p><a href="javascript:(function(){window.open('{{ post_url }}&amp;title='+encodeURIComponent(document.title)+'&amp;url='+encodeURIComponent(location.href),undefined,'width=530,height=300,menubar=no,toolbar=no,scrollbars=yes');})();">[見てるなう]</a>&nbsp;
-           (<input type="text" readonly="readonly" value="javascript:(function(){window.open('{{ post_url }}&amp;title='+encodeURIComponent(document.title)+'&amp;url='+encodeURIComponent(location.href),undefined,'width=530,height=300,menubar=no,toolbar=no,scrollbars=yes');})();" />)</p>
-        <p>このブックマークレットをブックマークに保存することで、いつでもどこでも見てるなうできます</p>
-        <p>Copyright (C) <a href="http://yosida95.com/">yosida95</a> All Rights Reserved.</a>
-    </body>
-</html>
+{% extends 'layout.jinja2' %}
+
+{% block body %}
+            <h1>ログイン完了</h1>
+            <p><a href="javascript:(function(){window.open('{{ post_url }}&amp;title='+encodeURIComponent(document.title)+'&amp;url='+encodeURIComponent(location.href),undefined,'width=530,height=300,menubar=no,toolbar=no,scrollbars=yes');})();">[見てるなう]</a></p>
+            <textarea>javascript:(function(){window.open('{{ post_url }}&amp;title='+encodeURIComponent(document.title)+'&amp;url='+encodeURIComponent(location.href),undefined,'width=530,height=300,menubar=no,toolbar=no,scrollbars=yes');})();</textarea>
+            <p>上のリンク（ブックマークレット）をお使いのブラウザのブックマークバーにドラッグアンドドロップしていただくことで、いつでもどこでも見てるなうできます。</p>
+{% endblock %}
