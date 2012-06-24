@@ -89,7 +89,8 @@ def authenticate(request):
 
         user, created = User.objects.get_or_create(
             user_id=tweepy.API(oauth).me().id)
-        user.key = uuid.uuid4().hex
+        if created is True:
+            user.key = uuid.uuid4().hex
         user.access_key = oauth.access_token.key
         user.access_secret = oauth.access_token.secret
         user.save()
