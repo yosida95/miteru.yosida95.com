@@ -129,7 +129,7 @@ def post(request):
 
     if len(token) is 0 or len(token_hashed) is 0 or\
     len(request.params.get(u'access_token', u'')) is not 0 or\
-    len(len(request.params.get(u'access_token', u''))) is not 0:
+    len(request.params.get(u'access_token', u'')) is not 0:
         raise HTTPFound(location=request.route_url(u'message'))
 
     if request.method == u'POST':
