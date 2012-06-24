@@ -1,6 +1,11 @@
 {% extends 'layout.jinja2' %}
 
 {% block body %}
+            <script type="text/javascript">
+                if(window.opener != null && window.opener != undefined){
+                    window.resizeTo(1000, 450);
+                }
+            </script>
             <h1>重要なお知らせ</h1>
 
             <p>「見てるなう(仮)をお使いいだきありがとうございます。</p>
