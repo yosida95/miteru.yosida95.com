@@ -24,8 +24,8 @@
             {% else %}
             <p>{{ url }}</p>
             {% endif %}
-            <input type="hidden" name="access_key" value="{{ access_key }}" />
-            <input type="hidden" name="access_secret" value="{{ access_secret }}" />
+            <input type="hidden" name="token" value="{{ token }}" />
+            <input type="hidden" name="token_hashed" value="{{ token_hashed }}" />
             <input type="hidden" name="title" value="{{ title }}" />
             <input type="hidden" name="url" value="{{ url }}" />
             <input type="hidden" name="csrf_token" value="{{ request.session.get_csrf_token() }}" />

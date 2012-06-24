@@ -1,12 +1,21 @@
 #-*- coding: utf-8 -*-
 
 import re
-import tweepy
+import hmac
 import json
+import uuid
+import tweepy
+import hashlib
+from datetime import (
+        datetime,
+        timedelta,
+    )
 from urllib import urlencode, urlopen
-from urlparse import urlunparse
+from urlparse import (
+        urlparse,
+        urlunparse
+    )
 from pyramid.response import Response
-from pyramid.i18n import TranslationStringFactory
 from pyramid.view import view_config
 from pyramid.httpexceptions import (
     HTTPFound,
@@ -19,15 +28,16 @@ from constants import (
     CONSUMER_SECRET,
     REQUEST_TOKEN_SESSION_KEY,
     )
-
-
-_ = TranslationStringFactory(u'miteru')
+from .models import (
+        User,
+        Token,
+    )
 
 
 def uxnu_shorten(url):
-    query = [('url', url)]
+    query = [(u'url', url)]
     req_url = urlunparse(
-        ['http', 'ux.nu', '/api/short', '', urlencode(query), ''])
+        ['http', u'ux.nu', u'/api/short', u'', urlencode(query), u''])
     result = urlopen(req_url)
     if 200 <= result.code < 300:
         short = json.loads(result.read())['data']['url']
@@ -39,13 +49,13 @@ def uxnu_shorten(url):
     return short
 
 
-@view_config(route_name='homepage', request_method='GET',
-             renderer='homepage.jinja2')
+@view_config(route_name=u'homepage', request_method=u'GET',
+             renderer=u'homepage.jinja2')
 def homepage(request):
     return {}
 
 
-@view_config(route_name='login', request_method='GET')
+@view_config(route_name=u'login', request_method=u'GET')
 def login(request):
     try:
         oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
@@ -58,8 +68,8 @@ def login(request):
         return HTTPFound(location=authorization_url)
 
 
-@view_config(route_name='authorization', request_method='GET',
-             renderer='authorization.jinja2')
+@view_config(route_name=u'authorization', request_method=u'GET',
+             renderer=u'authorization.jinja2')
 def authenticate(request):
     try:
         request_key, request_secret = request.session[
@@ -76,33 +86,72 @@ def authenticate(request):
         oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
         oauth.set_request_token(request_key, request_secret)
         oauth.get_access_token(verifier)
+
+        user, created = User.objects.get_or_create(
+            user_id=tweepy.API(oauth).me().id)
+        user.key = uuid.uuid4().hex
+        user.access_key = oauth.access_token.key
+        user.access_secret = oauth.access_token.secret
+        user.save()
     except tweepy.TweepError:
         raise HTTPUnauthorized()
     else:
-        post_url = '%s?access_key=%s&access_secret=%s' % (
-            request.route_url(u'post'),
-            oauth.access_token.key, oauth.access_token.secret)
-        return {u'post_url': post_url}
+        return {u'id': user.id,
+                u'key': user.key}
 
 
-@view_config(route_name='post', request_method=[u'GET', u'POST'],
+@view_config(route_name=u'token', request_method=u'GET',
+             renderer=u'token.jinja2')
+def token(request):
+    id = request.GET.get(u'id')
+    url = request.GET.get(u'url', u'')
+    domain = urlparse(url).netloc
+    title = request.GET.get(u'title', u'')
+
+    if id is not None and len(id) > 0:
+        user = User.objects.filter(id=id)
+        if int(user.count()) is 1:
+            token = uuid.uuid4().hex
+            Token(user=user.first(), token=token, domain=domain,
+                  expiration=datetime.utcnow() + timedelta(minutes=10)).save()
+            return {u'token': token, u'url': url, u'title': title}
+
+    raise HTTPUnauthorized()
+
+
+@view_config(route_name=u'post', request_method=[u'GET', u'POST'],
              renderer=u'post.jinja2')
 def post(request):
     url = request.params.get(u'url', u'')
     title = request.params.get(u'title', u'')
-    access_key = request.params.get(u'access_key', u'')
-    access_secret = request.params.get(u'access_secret', u'')
+    token = request.params.get(u'token', u'')
+    token_hashed = request.params.get(u'token_hashed', u'')
+
+    if len(token) is 0 or len(token_hashed) is 0 or\
+    len(request.params.get(u'access_token', u'')) is not 0 or\
+    len(len(request.params.get(u'access_token', u''))) is not 0:
+        raise HTTPFound(location=request.route_url(u'message'))
 
     if request.method == u'POST':
         csrf_token = request.POST.get(u'csrf_token', u'')
         comment = request.POST.get(u'comment', u'')
         max_title_length = 110 if len(comment) == 0 else 107 - len(comment)
 
-        oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-        oauth.set_access_token(access_key.encode(u'utf-8'),
-                               access_secret.encode(u'utf-8'))
-
         try:
+            try:
+                token = Token.objects.get(token=token, available=True,
+                                          expiration__gt=datetime.utcnow())
+            except Exception as why:
+                raise Exception(u'無効なトークンです。', False)
+            else:
+                token.available = False
+                token.save()
+
+            hmac_sha1 = hmac.new(token.user.key.encode(u'utf8'),
+                                 token.token.encode(u'utf8'), hashlib.sha1)
+            if hmac_sha1.hexdigest() != token_hashed:
+                raise Exception(u'無効なトークンです。', False)
+
             if csrf_token != request.session.get_csrf_token():
                 raise Exception(u'不正なリクエストです。', False)
 
@@ -127,8 +176,13 @@ def post(request):
                 text = u'%s - %s: %s #miteru' % (comment, title, url)
 
             try:
+                oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+                oauth.set_access_token(
+                    token.user.access_key.encode(u'utf-8'),
+                    token.user.access_secret.encode(u'utf-8'))
+
                 api = tweepy.API(oauth)
-                api.update_status(text.encode('utf-8'))
+                api.update_status(text.encode(u'utf-8'))
             except tweepy.TweepError, why:
                 successful, redo = False, False
                 message = u'投稿に失敗しました: %s' % (unicode(why), )
@@ -141,8 +195,15 @@ def post(request):
             u'redo': redo,
             u'message': message,
         })
-        return Response(body, content_type='application/json')
+
+        response = Response(body, content_type=u'application/json')
     else:
-        return {u'url': url, u'title': title,
-                u'access_key': access_key, u'access_secret': access_secret,
-               }
+        response = {u'url': url, u'title': title,
+                    u'token': token, u'token_hashed': token_hashed}
+
+    return response
+
+
+@view_config(route_name=u'message', renderer=u'message.jinja2')
+def message(request):
+    return {}

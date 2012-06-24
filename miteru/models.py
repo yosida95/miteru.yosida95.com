@@ -1,8 +1,28 @@
-class MyModel(object):
-    pass
+#-*- coding: utf-8 -*-
 
-root = MyModel()
+from mongoengine import (
+    BooleanField,
+    connect,
+    DateTimeField,
+    Document,
+    IntField,
+    ReferenceField,
+    StringField,
+)
+
+connect('miteru', host='mongo.s1.yosida95.com', port=27017)
 
 
-def get_root(environ):
-    return root
+class User(Document):
+    user_id = IntField(unique=True)
+    key = StringField()
+    access_key = StringField()
+    access_secret = StringField()
+
+
+class Token(Document):
+    token = StringField(unique=True)
+    user = ReferenceField(User, required=True)
+    domain = StringField()
+    expiration = DateTimeField()
+    available = BooleanField(default=True)
