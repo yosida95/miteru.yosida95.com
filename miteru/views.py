@@ -128,7 +128,7 @@ def authenticate(request):
              renderer=u'token.jinja2')
 def token(request):
     id = request.GET.get(u'id')
-    url = request.GET.get(u'url', u'')
+    url = unescape_html(request.GET.get(u'url', u''))
     domain = urlparse(url).netloc
     title = unescape_html(request.GET.get(u'title', u''))
 
@@ -147,7 +147,7 @@ def token(request):
              renderer=u'post.jinja2')
 def post(request):
 
-    url = request.params.get(u'url', u'')
+    url = unescape_html(request.params.get(u'url', u''))
     title = unescape_html(request.params.get(u'title', u''))
     token = request.params.get(u'token', u'')
     token_hashed = request.params.get(u'token_hashed', u'')
