@@ -6,6 +6,7 @@ import json
 import uuid
 import tweepy
 import hashlib
+import htmlentitydefs
 from datetime import (
         datetime,
         timedelta,
@@ -47,6 +48,28 @@ def uxnu_shorten(url):
         short = url
 
     return short
+
+
+def unescape_html(string):
+    matches = re.findall(ur'(&#(x?)([0-9a-fA-F]+);?)', string)
+    for match in matches:
+        try:
+            result = unichr(int(match[2], 16 if match[1] == u'x' else 10))
+        except ValueError:
+            continue
+        else:
+            string = string.replace(match[0], result)
+
+    matches = re.findall(ur'(&([a-zA-Z]+);?)', string)
+    for match in matches:
+        try:
+            result = htmlentitydefs.name2codepoint[match[1]]
+        except KeyError:
+            continue
+        else:
+            string = string.replace(match[0], unichr(result))
+
+    return string
 
 
 @view_config(route_name=u'homepage', request_method=u'GET',
@@ -107,7 +130,7 @@ def token(request):
     id = request.GET.get(u'id')
     url = request.GET.get(u'url', u'')
     domain = urlparse(url).netloc
-    title = request.GET.get(u'title', u'')
+    title = unescape_html(request.GET.get(u'title', u''))
 
     if id is not None and len(id) > 0:
         user = User.objects.filter(id=id)
@@ -123,8 +146,9 @@ def token(request):
 @view_config(route_name=u'post', request_method=[u'GET', u'POST'],
              renderer=u'post.jinja2')
 def post(request):
+
     url = request.params.get(u'url', u'')
-    title = request.params.get(u'title', u'')
+    title = unescape_html(request.params.get(u'title', u''))
     token = request.params.get(u'token', u'')
     token_hashed = request.params.get(u'token_hashed', u'')
 
