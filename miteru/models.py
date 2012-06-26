@@ -9,8 +9,9 @@ from mongoengine import (
     ReferenceField,
     StringField,
 )
+from .constants import MONGO_HOST
 
-connect('miteru', host='mongo.s1.yosida95.com', port=27017)
+connect('miteru', host=MONGO_HOST, port=27017)
 
 
 class User(Document):
