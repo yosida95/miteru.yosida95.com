@@ -1,2 +1,4 @@
 *.pyc
 miteru.egg-info
+.cache/
+log/
