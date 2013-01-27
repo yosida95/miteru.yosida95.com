@@ -3,7 +3,7 @@
             <div class="hero-unit">
                 <h1>見てるなう(仮)</h1>
                 <p>あなたが今見ているウェブページをTwitterで共有するためのサービス</p>
-                <p class="pull-right"><a href="/login" class="btn btn-primary">Twitterアカウントでログイン</a></p>
+                <p class="pull-right"><a href="{{ request.route_path('login') }}" class="btn btn-primary">Twitterアカウントでログイン</a></p>
             </div>
         </div>
 
@@ -12,35 +12,25 @@
                 <div class="span12">
                     <h2>使用方法</h2>
                     <ol>
-                        <li><a href="{{ request.route_path('login') }}">Twitterアカウントでログイン</a></li>
-                        <li>認証後に表示されるページにあるブックマークレットを保存する</li>
-                        <li>Twitterで共有したいウェブページを発見したらブックマークレットをクリックする</li>
-                        <li>表示される投稿画面で、必要に応じてコメントを入力した後、投稿する</li>
+                        <li>Twitterアカウントで<a href="{{ request.route_path('login') }}">ログイン</a>する</li>
+                        <li>認証完了ページに表示されるブックマークレットをブックマークバーにドラッグアンドドロップで保存する<br />
+                            <img src="{{ request.static_path('miteru:static/img/bookmarklet.png') }}" alt="Bookmarklet" width="400" /></li>
+                        <li>Twitterで共有したいウェブページでこのブックマークレットをクリックする</li>
+                        <li>表示される投稿画面で、必要に応じてコメントを入力して、投稿ボタンを押す<br />
+                            <img src="{{ request.static_path('miteru:static/img/post_example.jpeg') }}" alt="投稿画面例" /></li>
                     </ol>
                 </div>
             </div>
 
             <div class="row">
-                <div class="span12">
-                    <h2>使用例</h2>
-                    <div class="row">
-                        <div class="span6">
-                            <h3>投稿画面例</h3>
-                            <img src="/static/post_example.jpeg" alt="投稿画面例" />
-                        </div>
-                    </div>
+                <div class="span6">
+                    <h3>投稿例(コメント無し)</h3>
+                    <blockquote class="twitter-tweet tw-align-center"><p>Google: <a href="http://t.co/rgpiPS2c" title="http://ux.nu/DVKyN">ux.nu/DVKyN</a> <a href="https://twitter.com/search/%2523miteru">#miteru</a></p>&mdash; よしださん (@yosida95) <a href="https://twitter.com/yosida95/status/202058963238395904" data-datetime="2012-05-14T15:33:05+00:00">5月 14, 2012</a></blockquote>
+                </div>
 
-                    <div class="row">
-                        <div class="span6">
-                            <h3>投稿例(コメント無し)</h3>
-                            <blockquote class="twitter-tweet tw-align-center"><p>Google: <a href="http://t.co/rgpiPS2c" title="http://ux.nu/DVKyN">ux.nu/DVKyN</a> <a href="https://twitter.com/search/%2523miteru">#miteru</a></p>&mdash; よしださん (@yosida95) <a href="https://twitter.com/yosida95/status/202058963238395904" data-datetime="2012-05-14T15:33:05+00:00">5月 14, 2012</a></blockquote>
-                        </div>
-
-                        <div class="span6">
-                            <h3>投稿例(コメント有り)</h3>
-                            <blockquote class="twitter-tweet tw-align-center"><p>(コメント) - Google: <a href="http://t.co/rgpiPS2c" title="http://ux.nu/DVKyN">ux.nu/DVKyN</a> <a href="https://twitter.com/search/%2523miteru">#miteru</a></p>&mdash; よしださん (@yosida95) <a href="https://twitter.com/yosida95/status/202059128623988738" data-datetime="2012-05-14T15:33:44+00:00">5月 14, 2012</a></blockquote>
-                        </div>
-                    </div>
+                <div class="span6">
+                    <h3>投稿例(コメント有り)</h3>
+                    <blockquote class="twitter-tweet tw-align-center"><p>(コメント) - Google: <a href="http://t.co/rgpiPS2c" title="http://ux.nu/DVKyN">ux.nu/DVKyN</a> <a href="https://twitter.com/search/%2523miteru">#miteru</a></p>&mdash; よしださん (@yosida95) <a href="https://twitter.com/yosida95/status/202059128623988738" data-datetime="2012-05-14T15:33:44+00:00">5月 14, 2012</a></blockquote>
                 </div>
             </div>
 
