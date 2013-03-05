@@ -26,7 +26,7 @@ class User(Document):
 
 class Token(Document):
     token = StringField(unique=True)
-    user = ReferenceField(User, required=True)
+    user = ReferenceField(User, required=True, dbref=True)
     domain = StringField()
     expiration = DateTimeField()
     available = BooleanField(default=True)
