@@ -30,9 +30,10 @@ from constants import (
     REQUEST_TOKEN_SESSION_KEY,
     )
 from .models import (
-        User,
-        Token,
-    )
+    User,
+    Token,
+    PostBuilder
+)
 
 
 def uxnu_shorten(url):
@@ -149,6 +150,7 @@ def post(request):
 
     url = unescape_html(request.params.get(u'url', u''))
     title = unescape_html(request.params.get(u'title', u''))
+    comment = unescape_html(request.params.get(u'comment', u''))
     token = request.params.get(u'token', u'')
     token_hashed = request.params.get(u'token_hashed', u'')
 
@@ -159,8 +161,6 @@ def post(request):
 
     if request.method == u'POST':
         csrf_token = request.POST.get(u'csrf_token', u'')
-        comment = request.POST.get(u'comment', u'')
-        max_title_length = 110 if len(comment) == 0 else 107 - len(comment)
 
         try:
             try:
@@ -180,26 +180,18 @@ def post(request):
             if csrf_token != request.session.get_csrf_token():
                 raise Exception(u'不正なリクエストです。', False)
 
-            if re.match(r'^https?://.+$', url):
-                url = uxnu_shorten(url)
-            else:
+            if re.match(r'^https?://.+$', url) is None:
                 raise Exception(u'不正なURLです。', False)
 
-            title = u'(No Title)' if len(title) == 0 else title
-            if len(title) > max_title_length:
-                title = title[:max_title_length - 1] + u'…'
-
-            if len(comment) > 100:
-                raise Exception(u'コメントが長過ぎます。100字以内で入力してください。', True)
+            builder = PostBuilder(url, title, comment)
+            try:
+                tweet = builder.build()
+            except AssertionError:
+                raise Exception(u'コメントが長過ぎます。', True)
         except Exception, why:
             successful = False
             message, redo = why.args
         else:
-            if len(comment) == 0:
-                text = u'%s: %s #miteru' % (title, url)
-            else:
-                text = u'%s - %s: %s #miteru' % (comment, title, url)
-
             try:
                 oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
                 oauth.set_access_token(
@@ -207,7 +199,7 @@ def post(request):
                     token.user.access_secret.encode(u'utf-8'))
 
                 api = tweepy.API(oauth)
-                api.update_status(text.encode(u'utf-8'))
+                api.update_status(tweet.encode(u'utf-8'))
             except tweepy.TweepError, why:
                 successful, redo = False, False
                 message = u'投稿に失敗しました: %s' % (unicode(why), )
