@@ -213,7 +213,7 @@ def post(request):
             u'message': message,
         })
 
-        response = Response(body, content_type=u'application/json')
+        response = Response(body, content_type='application/json')
     else:
         response = {u'url': url, u'title': title,
                     u'token': token, u'token_hashed': token_hashed}
