@@ -17,6 +17,14 @@
     </head>
     <body>
         <h1>見てるなう(仮)</h1>
+        {% if request.scheme == "http" %}
+        <div class="alert alert-success alert-block">
+            <strong style="text-align: center;">TLS通信対応のお知らせ</strong>
+            <p>この度、見てるなう(仮)はTLS通信による通信内容の暗号化に対応いたしました。<br />
+            暗号化を希望される場合は、見てるなう(仮)トップページからログインして、新しいブックマークレットを取得してください。</p>
+        </div>
+        {% endif %}
+
         <div id="message"></div>
         <form id="post_form" method="post" action="{{ request.route_path('post') }}">
             {% if title %}
