@@ -82,11 +82,11 @@ def homepage(request):
 @view_config(route_name=u'login', request_method=u'GET')
 def login(request):
     try:
-        oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+        oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, secure=True)
         authorization_url = oauth.get_authorization_url()
         request.session[REQUEST_TOKEN_SESSION_KEY] = (
             oauth.request_token.key, oauth.request_token.secret)
-    except tweepy.TweepError:
+    except tweepy.TweepError as why:
         raise HTTPServerError()
     else:
         return HTTPFound(location=authorization_url)
@@ -96,8 +96,8 @@ def login(request):
              renderer=u'authorization.jinja2')
 def authenticate(request):
     try:
-        request_key, request_secret = request.session[
-            REQUEST_TOKEN_SESSION_KEY]
+        request_key, request_secret\
+            = request.session[REQUEST_TOKEN_SESSION_KEY]
     except KeyError:
         raise HTTPForbidden()
     else:
@@ -107,7 +107,7 @@ def authenticate(request):
     try:
         verifier = request.GET.get(u'oauth_verifier', u'')
 
-        oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+        oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, secure=True)
         oauth.set_request_token(request_key, request_secret)
         oauth.get_access_token(verifier)
 
