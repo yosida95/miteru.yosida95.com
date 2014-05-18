@@ -1,21 +1,12 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import re
-import hmac
 import json
 import uuid
-import tweepy
-import hashlib
 import htmlentitydefs
-from datetime import (
-        datetime,
-        timedelta,
-    )
-from urllib import urlencode, urlopen
-from urlparse import (
-        urlparse,
-        urlunparse
-    )
+from urlparse import urlparse
+
+import tweepy
 from pyramid.response import Response
 from pyramid.view import view_config
 from pyramid.httpexceptions import (
@@ -23,45 +14,31 @@ from pyramid.httpexceptions import (
     HTTPServerError,
     HTTPUnauthorized,
     HTTPForbidden,
-    )
+)
+
 from constants import (
     CONSUMER_KEY,
     CONSUMER_SECRET,
     REQUEST_TOKEN_SESSION_KEY,
-    )
+)
 from .models import (
     User,
-    Token,
-    PostBuilder
+    OnetimeToken,
+    Tweet,
 )
 
 
-def uxnu_shorten(url):
-    query = [(u'url', url)]
-    req_url = urlunparse(
-        ['http', u'ux.nu', u'/api/short', u'', urlencode(query), u''])
-    result = urlopen(req_url)
-    if 200 <= result.code < 300:
-        short = json.loads(result.read())['data']['url']
-    elif 400 <= result.code < 500:
-        raise Exception()
-    else:
-        short = url
-
-    return short
-
-
 def unescape_html(string):
-    matches = re.findall(ur'(&#(x?)([0-9a-fA-F]+);?)', string)
+    matches = re.findall(r'(&#(x?)([0-9a-fA-F]+);?)', string)
     for match in matches:
         try:
-            result = unichr(int(match[2], 16 if match[1] == u'x' else 10))
+            result = unichr(int(match[2], 16 if match[1] == 'x' else 10))
         except ValueError:
             continue
         else:
             string = string.replace(match[0], result)
 
-    matches = re.findall(ur'(&([a-zA-Z]+);?)', string)
+    matches = re.findall(r'(&([a-zA-Z]+);?)', string)
     for match in matches:
         try:
             result = htmlentitydefs.name2codepoint[match[1]]
@@ -73,27 +50,27 @@ def unescape_html(string):
     return string
 
 
-@view_config(route_name=u'homepage', request_method=u'GET',
-             renderer=u'homepage.jinja2')
+@view_config(route_name='homepage', request_method='GET',
+             renderer='homepage.jinja2')
 def homepage(request):
     return {}
 
 
-@view_config(route_name=u'login', request_method=u'GET')
+@view_config(route_name='login', request_method='GET')
 def login(request):
     try:
         oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, secure=True)
         authorization_url = oauth.get_authorization_url()
         request.session[REQUEST_TOKEN_SESSION_KEY] = (
             oauth.request_token.key, oauth.request_token.secret)
-    except tweepy.TweepError as why:
+    except tweepy.TweepError:
         raise HTTPServerError()
     else:
         return HTTPFound(location=authorization_url)
 
 
-@view_config(route_name=u'authorization', request_method=u'GET',
-             renderer=u'authorization.jinja2')
+@view_config(route_name='authorization', request_method='GET',
+             renderer='authorization.jinja2')
 def authenticate(request):
     try:
         request_key, request_secret\
@@ -101,11 +78,11 @@ def authenticate(request):
     except KeyError:
         raise HTTPForbidden()
     else:
-        if request_key != request.GET.get(u'oauth_token'):
+        if request_key != request.GET.get('oauth_token'):
             raise HTTPForbidden()
 
     try:
-        verifier = request.GET.get(u'oauth_verifier', u'')
+        verifier = request.GET.get('oauth_verifier', '')
 
         oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET, secure=True)
         oauth.set_request_token(request_key, request_secret)
@@ -121,106 +98,62 @@ def authenticate(request):
     except tweepy.TweepError:
         raise HTTPUnauthorized()
     else:
-        return {u'id': user.id,
-                u'key': user.key}
+        return {'id': user.id,
+                'key': user.key}
 
 
-@view_config(route_name=u'token', request_method=u'GET',
-             renderer=u'token.jinja2')
+@view_config(route_name='token', request_method='GET',
+             renderer='token.jinja2')
 def token(request):
-    id = request.GET.get(u'id')
-    url = unescape_html(request.GET.get(u'url', u''))
+    url = unescape_html(request.GET.get('url', ''))
     domain = urlparse(url).netloc
-    title = unescape_html(request.GET.get(u'title', u''))
 
-    if id is not None and len(id) > 0:
-        user = User.objects.filter(id=id)
-        if int(user.count()) is 1:
-            token = uuid.uuid4().hex
-            Token(user=user.first(), token=token, domain=domain,
-                  expiration=datetime.utcnow() + timedelta(minutes=10)).save()
-            return {u'token': token, u'url': url, u'title': title}
+    try:
+        token = OnetimeToken.new(request.GET.get('id'), domain)
+    except ValueError:
+        raise HTTPUnauthorized()
 
-    raise HTTPUnauthorized()
+    return {
+        'token': token.token,
+        'url': url,
+        'title': unescape_html(request.GET.get('title', '')),
+    }
 
 
-@view_config(route_name=u'post', request_method=[u'GET', u'POST'],
-             renderer=u'post.jinja2')
+@view_config(route_name='post', request_method=['GET', 'POST'],
+             renderer='post.jinja2')
 def post(request):
 
-    url = unescape_html(request.params.get(u'url', u''))
-    title = unescape_html(request.params.get(u'title', u''))
-    comment = unescape_html(request.params.get(u'comment', u''))
-    token = request.params.get(u'token', u'')
-    token_hashed = request.params.get(u'token_hashed', u'')
+    tweet = Tweet(
+        unescape_html(request.params.get('title', '')),
+        unescape_html(request.params.get('url', '')),
+        unescape_html(request.params.get('comment', '')))
 
-    if len(token) is 0 or len(token_hashed) is 0 or\
-    len(request.params.get(u'access_token', u'')) is not 0 or\
-    len(request.params.get(u'access_token', u'')) is not 0:
-        raise HTTPFound(location=request.route_url(u'message'))
+    token = request.params.get('token', '')
+    token_hashed = request.params.get('token_hashed', '')
 
-    if request.method == u'POST':
-        csrf_token = request.POST.get(u'csrf_token', u'')
-
+    if request.POST:
         try:
-            try:
-                token = Token.objects.get(token=token, available=True,
-                                          expiration__gt=datetime.utcnow())
-            except Exception as why:
-                raise Exception(u'無効なトークンです。', False)
-            else:
-                token.available = False
-                token.save()
-
-            hmac_sha1 = hmac.new(token.user.key.encode(u'utf8'),
-                                 token.token.encode(u'utf8'), hashlib.sha1)
-            if hmac_sha1.hexdigest() != token_hashed:
-                raise Exception(u'無効なトークンです。', False)
-
+            csrf_token = request.params.get('csrf_token')
             if csrf_token != request.session.get_csrf_token():
-                raise Exception(u'不正なリクエストです。', False)
+                raise Exception('不正なリクエストです。', False)
 
-            if re.match(r'^https?://.+$', url) is None:
-                raise Exception(u'不正なURLです。', False)
+            if re.match(r'^https?://.+$', tweet.url) is None:
+                raise Exception('不正なURLです。', False)
 
-            builder = PostBuilder(url, title, comment)
-            try:
-                tweet = builder.build()
-            except AssertionError:
-                raise Exception(u'コメントが長過ぎます。', True)
-        except Exception, why:
-            successful = False
-            message, redo = why.args
+            tweet.do(token, token_hashed)
+        except ValueError as why:
+            successful, redo = False, False
+            message = '投稿に失敗しました: {0!s}'.format(why)
         else:
-            try:
-                oauth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-                oauth.set_access_token(
-                    token.user.access_key.encode(u'utf-8'),
-                    token.user.access_secret.encode(u'utf-8'))
-
-                api = tweepy.API(oauth)
-                api.update_status(tweet.encode(u'utf-8'))
-            except tweepy.TweepError, why:
-                successful, redo = False, False
-                message = u'投稿に失敗しました: %s' % (unicode(why), )
-            else:
-                successful, redo = True, False
-                message = u'投稿しました'
+            successful, redo = True, False
+            message = '投稿しました'
 
         body = json.dumps({
-            u'result': successful,
-            u'redo': redo,
-            u'message': message,
+            'result': successful,
+            'redo': redo,
+            'message': message,
         })
-
-        response = Response(body, content_type='application/json')
+        return Response(body, content_type='application/json')
     else:
-        response = {u'url': url, u'title': title,
-                    u'token': token, u'token_hashed': token_hashed}
-
-    return response
-
-
-@view_config(route_name=u'message', renderer=u'message.jinja2')
-def message(request):
-    return {}
+        return tweet.to_dict(token, token_hashed)
