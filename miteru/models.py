@@ -27,8 +27,8 @@ from sqlalchemy.sql.sqltypes import (
     Boolean,
     String,
     DateTime,
-    Integer,
 )
+from sqlalchemy.dialects.mysql import BIGINT
 from zope.sqlalchemy import ZopeTransactionExtension
 
 from miteru.compat import unichr
@@ -41,7 +41,8 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'users'
 
-    id = Column(Integer(), primary_key=True, autoincrement=False)
+    id = Column(BIGINT(unsigned=True),
+                primary_key=True, autoincrement=False)
     access_key = Column(String(128), nullable=False)
     access_secret = Column(String(128), nullable=False)
 
@@ -60,10 +61,13 @@ class SharedKey(Base):
 
     id = Column(String(36), primary_key=True)
     key = Column(String(40), unique=True, nullable=False)
-    user_id = Column(Integer(), ForeignKey(User.id), nullable=False)
+    user_id = Column(BIGINT(unsigned=True), ForeignKey(User.id),
+                     nullable=False)
     user = relationship(User, backref=backref('shared_keys', uselist=True))
     created_at = Column(DateTime(), nullable=False)
     deactivated_at = Column(DateTime(), nullable=True)
+
+    status_id = Column(BIGINT(unsigned=True), nullable=False)
 
     def __init__(self, user, key, created_at):
         assert isinstance(user, User)
