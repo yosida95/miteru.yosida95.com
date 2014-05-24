@@ -16,12 +16,13 @@ from pyramid.httpexceptions import (
     HTTPForbidden,
 )
 
-from constants import (
+from miteru.compat import unichr
+from miteru.constants import (
     CONSUMER_KEY,
     CONSUMER_SECRET,
     REQUEST_TOKEN_SESSION_KEY,
 )
-from .models import (
+from miteru.models import (
     User,
     OnetimeToken,
     Tweet,

@@ -5,7 +5,8 @@ import unittest
 from pyramid import testing
 from pyramid.i18n import TranslationStringFactory
 
-from .models import Tweet
+from miteru.models import Tweet
+from miteru.compat import unichr
 
 _ = TranslationStringFactory('miteru')
 LEADER = unichr(0x22ef)
