@@ -1,4 +1,4 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 CONSUMER_KEY = 'TWITTER CLIENT\'s CONSUMER KEY'
 CONSUMER_SECRET = 'TWITTER CLIENT\'s CONSUMER SECRET'

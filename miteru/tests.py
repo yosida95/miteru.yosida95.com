@@ -94,7 +94,8 @@ class TestTweet(unittest.TestCase):
             self.HTTP, 'comment')
         self.assertEqual(
             inst.build(),
-            u'comment - {title} extr{leader} : http://example.com/ #miteru'.format(
+            u'comment - {title} extr{leader} : '
+            u'http://example.com/ #miteru'.format(
                 title=' '.join(self.HTTP for _ in range(4)),
                 leader=LEADER,
             )
