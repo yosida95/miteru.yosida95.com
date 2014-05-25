@@ -38,7 +38,6 @@ def main(global_config, **settings):
     config.add_route('authorization', '/authorization')
     config.add_route('token', '/token')
     config.add_route('post', '/post')
-    config.add_route('message', '/message')
     config.scan()
 
     return config.make_wsgi_app()
