@@ -1,8 +1,8 @@
 machine:
     python:
-        version: 2.7.6
+        version: 3.4.0
     environment:
-        TOXENV: py27
+        TOXENV: py34
 dependencies:
     override:
         - pip install tox
