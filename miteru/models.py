@@ -2,15 +2,15 @@
 
 import hashlib
 import hmac
+import json
 import random
 import re
 import string
 import uuid
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime
 
+import requests
+from requests_oauthlib import OAuth1
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import (
     backref,
@@ -24,18 +24,23 @@ from sqlalchemy.sql.schema import (
     ForeignKey,
 )
 from sqlalchemy.sql.sqltypes import (
-    Boolean,
     String,
     DateTime,
 )
 from sqlalchemy.dialects.mysql import BIGINT
 from zope.sqlalchemy import ZopeTransactionExtension
 
-from miteru.compat import unichr
+from miteru.compat import (
+    parse_qs,
+    unichr,
+    urlencode,
+)
+from miteru.exceptions import MiteruException
 
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
+LEADER = unichr(0x2026)
 
 
 class User(Base):
@@ -66,8 +71,6 @@ class SharedKey(Base):
     user = relationship(User, backref=backref('shared_keys', uselist=True))
     created_at = Column(DateTime(), nullable=False)
     deactivated_at = Column(DateTime(), nullable=True)
-
-    status_id = Column(BIGINT(unsigned=True), nullable=False)
 
     def __init__(self, user, key, created_at):
         assert isinstance(user, User)
@@ -109,71 +112,115 @@ class SharedKey(Base):
     @classmethod
     def _is_unique_key(cls, key):
         count = DBSession.query(
-            func.count(SharedKey.key)
+            func.count(cls.key)
         ).filter(
-            SharedKey.key == key
+            cls.key == key
         ).first()
 
         return count[0] < 1
 
 
-class OnetimeToken(Base):
-    __tablename__ = 'onetime_tokens'
+class TwitterAPI:
+    CLIENT_KEY = None
+    CLIENT_SECRET = None
 
-    id = Column(String(36), primary_key=True)
-    token = Column(String(40), nullable=False)
-    key_key = Column(String(40), ForeignKey(SharedKey.key), nullable=False)
-    key = relationship(SharedKey,
-                       backref=backref('onetime_tokens', uselist=True))
-    domain = Column(String(255), nullable=False)
-    expires_in = Column(DateTime(), nullable=False)
-    is_used = Column(Boolean(), nullable=False)
+    def __new__(cls, *args, **kwargs):
+        if cls.CLIENT_KEY is None:
+            raise ValueError('CLIENT_KEY is not set')
 
-    def __init__(self, key, token, domain, expires_in):
-        self.id = str(uuid.uuid4())
-        self.key = key
-        self.token = token
-        self.domain = domain
-        self.expires_in = expires_in
-        self.is_used = False
+        if cls.CLIENT_SECRET is None:
+            raise ValueError('CLIENT_SECRET is not set')
 
-    def mark_as_used(self):
-        self.is_used = True
+        return super(TwitterAPI, cls).__new__(cls)
 
-    @property
-    def available(self):
-        return not self.is_used and self.expires_in >= datetime.now()
-
-    @classmethod
-    def new(cls, key_id, domain, now=lambda: datetime.now()):
-        pool = string.ascii_letters + string.digits
-        token = ''.join(random.choice(pool) for _ in range(40))
-
-        key = DBSession.query(
-            SharedKey
+    def _get_user(self, user_id):
+        user = DBSession.query(
+            User
         ).filter(
-            SharedKey.id == key_id
+            User.id == user_id
         ).first()
-        if key is None:
-            raise ValueError('認証に失敗しました')
+        if user is None:
+            raise ValueError(user_id)
 
-        expires_in = now() + timedelta(minutes=10)
+        return user
 
-        inst = cls(key, token, domain, expires_in)
-        DBSession.add(inst)
-        return inst
+    def get_authorized_client(self, token, token_secret, verifier=None):
+        return OAuth1(client_key=self.CLIENT_KEY,
+                      client_secret=self.CLIENT_SECRET,
+                      resource_owner_key=token,
+                      resource_owner_secret=token_secret,
+                      verifier=verifier)
 
-    @classmethod
-    def from_token(cls, token):
-        token = DBSession.query(
-            cls
-        ).filter(
-            cls.token == token,
-        ).first()
-        if token is None or not token.available:
-            raise ValueError(token)
+    def get_unauthorized_client(self):
+        return OAuth1(client_key=self.CLIENT_KEY,
+                      client_secret=self.CLIENT_SECRET)
 
-        return token
+    def get_request_token(self):
+        resp = requests.post(url='https://api.twitter.com/oauth/request_token',
+                             auth=self.get_unauthorized_client())
+        credentials = parse_qs(resp.content)
+        request_token = credentials[b'oauth_token'][0].decode('utf-8')
+        request_secret = credentials[b'oauth_token_secret'][0].decode('utf-8')
+
+        return request_token, request_secret
+
+    def get_authorization_url(self, request_token):
+        return '{0}?{1}'.format(
+            'https://api.twitter.com/oauth/authorize',
+            urlencode([('oauth_token', request_token)]))
+
+    def authorize(self, request_key, request_secret, verifier):
+        resp = requests.post(
+            url='https://api.twitter.com/oauth/access_token',
+            auth=self.get_authorized_client(request_key, request_secret,
+                                            verifier))
+        if resp.status_code == 401:
+            raise ValueError()
+        elif resp.status_code != 200:
+            raise Exception(resp.status_code)
+
+        credentials = parse_qs(resp.content)
+
+        try:
+            user_id = int(credentials[b'user_id'][0].decode('utf-8'))
+        except ValueError:
+            raise Exception()
+
+        try:
+            user = self._get_user(user_id)
+        except ValueError:
+            user = User(user_id)
+            DBSession.add(user)
+
+        user.set_access_token(
+            credentials[b'oauth_token'][0].decode('utf-8'),
+            credentials[b'oauth_token_secret'][0].decode('utf-8'))
+
+        key = SharedKey.new(user)
+        DBSession.add(key)
+        return key
+
+    def post(self, user, text):
+        if len(text) > 140:
+            raise MiteruException('Tweet is too long', False)
+
+        resp = requests.post(
+            url='https://api.twitter.com/1.1/statuses/update.json',
+            data=json.dumps({'status': text}),
+            auth=self.get_authorized_client(user.access_key,
+                                            user.access_secret))
+
+        if 200 <= resp.status_code < 300:
+            return True
+
+        try:
+            body = resp.json()
+            errors = body['errors']
+        except (KeyError, ValueError):
+            raise MiteruException(
+                'TwitterAPI returns {0}'.format(resp.status_code), False)
+        else:
+            raise MiteruException(','.join(errors), False)
 
 
 class Tweet:
@@ -241,7 +288,7 @@ class Tweet:
 
         allowed_title_length = 140 - (length - title_length)
         if index < 0 or allowed_title_length < 5:
-            raise ValueError('The comment is to long...')
+            raise MiteruException('The comment is to long...', True)
 
         rest = allowed_title_length - 1
         position = 0
@@ -266,33 +313,30 @@ class Tweet:
         else:
             position += rest
 
-        factor[index] = self.title[:position] + unichr(0x22ef)
+        factor[index] = self.title[:position] + LEADER
         return ' '.join(factor)
 
-    def to_dict(self, token, token_hashed):
+    def to_dict(self):
         return {
             'title': self.title,
             'url': self.url,
             'comment': self.comment,
-            'token': token,
-            'token_hashed': token_hashed,
         }
 
-    def authenticate(self, token, token_hashed):
-        try:
-            token = OnetimeToken.from_token(token)
-        except ValueError:
-            raise ValueError('認証に失敗しました。')
-        else:
-            token.mark_as_used()
-            mac = hmac.new(token.key.key.encode('utf-8'), hashlib.sha1)
-            mac.update(self.token)
-            if mac.hexdigest() != token_hashed:
-                raise ValueError('認証に失敗しました。')
+    def authenticate(self, key_id, signature, query):
+        key = DBSession.query(
+            SharedKey
+        ).filter(
+            SharedKey.id == key_id
+        ).first()
+        if key is None:
+            raise MiteruException('認証に失敗しました。', False)
 
-            return True
+        expected_signature = hmac.new(key.key, query, hashlib.sha1).hexdigest()
+        if signature != expected_signature:
+            raise MiteruException('認証に失敗しました。', False)
 
-    def do(self, token, token_hashed):
-        self.authenticate(token, token_hashed)
+        return key.user
 
-        raise NotImplementedError
+    def do(self, user):
+        return TwitterAPI().post(user, self.build())

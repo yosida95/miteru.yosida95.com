@@ -2,14 +2,10 @@
 
 import unittest
 
-from pyramid import testing
-from pyramid.i18n import TranslationStringFactory
-
-from miteru.models import Tweet
-from miteru.compat import unichr
-
-_ = TranslationStringFactory('miteru')
-LEADER = unichr(0x22ef)
+from miteru.models import (
+    LEADER,
+    Tweet,
+)
 
 
 class TestTweet(unittest.TestCase):
@@ -56,10 +52,11 @@ class TestTweet(unittest.TestCase):
         )
 
     def test_build_05(self):
+        from miteru.exceptions import MiteruException
         inst = Tweet('', self.HTTP,
                      ' '.join(self.HTTP for _ in range(5)))
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(MiteruException):
             inst.build()
 
     def test_build_06(self):

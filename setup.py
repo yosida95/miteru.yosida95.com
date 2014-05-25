@@ -23,7 +23,11 @@ requires = [
     'SQLAlchemy',
     'transaction',
     'zope.sqlalchemy',
-    'tweepy',
+    'waitress',
+    'oauthlib',
+    'requests',
+    'requests_oauthlib',
+    'slimit',
 ]
 
 tests_require = [
