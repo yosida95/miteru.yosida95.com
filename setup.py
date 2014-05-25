@@ -54,5 +54,8 @@ setup(name='miteru',
       entry_points={
           "paste.app_factory": [
               "main = miteru:main",
+          ],
+          "console_scripts": [
+              "initialize_miteru_db = miteru.scripts.initializedb:main",
           ]
       })
