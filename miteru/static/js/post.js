@@ -83,9 +83,10 @@
             }
         }, false);
 
-        form.addEventListener('submit', function() {
-            var message = document.getElementById('message');
+        form.addEventListener('submit', function(evt) {
+            evt.preventDefault();  // cancel form submitting
 
+            var message = document.getElementById('message');
             if (this.comment.value === this.comment.title) {
                 this.comment.value = '';
             }
@@ -115,7 +116,7 @@
                 message.appendChild(document.createTextNode(body.message));
             });
 
-            return false; // cancel form submitting
+            return false;
         }, false);
 
         comment.focus();
