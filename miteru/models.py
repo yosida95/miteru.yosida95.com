@@ -217,7 +217,12 @@ class TwitterAPI:
             raise MiteruException(
                 'TwitterAPI returns {0}'.format(resp.status_code), False)
         else:
-            raise MiteruException(','.join(errors), False)
+            errormsg = ', '.join(
+                '{0}: {1}'.format(error['code'], error['message'])
+                for error in errors
+                if set(error.keys()).issuperset({'message', 'code'})
+            )
+            raise MiteruException(errormsg, False)
 
 
 class Tweet:
