@@ -9,7 +9,7 @@
         Client.prototype.encode = function(params) {
             return Object.keys(params).map(function(key) {
                 return key + '=' + encodeURIComponent(params[key]);
-            }).join('&amp;');
+            }).join('&');
         };
 
         Client.prototype.sign = function(params) {
@@ -17,10 +17,10 @@
                 qs = this.encode(params);
 
             var query = {};
-            location.search.split('&').map(function(kv) {
+            location.search.substring(1).split('&amp;').map(function(kv) {
                 var kv = kv.split('='),
-                    key = decodeURIComponent(k[0]),
-                    value = decodeURIComponent(k[1]);
+                    key = decodeURIComponent(kv[0]),
+                    value = decodeURIComponent(kv[1]);
                 query[key] = value;
             });
             if ('keyid' in query) {

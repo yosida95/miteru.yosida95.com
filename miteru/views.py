@@ -2,6 +2,7 @@
 
 import re
 import json
+from urllib.parse import quote
 
 from jinja2 import (
     Environment,
@@ -119,8 +120,9 @@ def post(request):
         if csrf_token != request.session.get_csrf_token():
             raise MiteruException('不正なリクエストです。', False)
 
-        signed_query = urlencode(map(
-            lambda key: (key, request.POST.get(key, '')),
+        signed_query = '&'.join(map(
+            lambda key: '{0}={1}'.format(
+                key, quote(request.POST.get(key, ''), safe='')),
             request.POST.get('signed_keys', '').split(',')
         ))
         user = tweet.authenticate(request.POST.get('keyid', ''),
