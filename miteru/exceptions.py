@@ -3,6 +3,6 @@
 
 class MiteruException(Exception):
 
-    def __init__(self, message, retriable):
+    def __init__(self, message, retryable):
         self.message = message
-        self.retryable = retriable
+        self.retryable = retryable

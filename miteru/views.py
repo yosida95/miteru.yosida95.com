@@ -129,7 +129,7 @@ def post(request):
 
         tweet.do(user)
     except MiteruException as why:
-        successful, redo = False, why.retriable
+        successful, redo = False, why.retryable
         message = '投稿に失敗しました: {0!s}'.format(why.message)
     except BaseException as why:
         successful, redo = False, False
