@@ -20,7 +20,6 @@ from slimit import minify
 from miteru.compat import (
     htmlentitydefs,
     unichr,
-    urlencode,
 )
 from miteru.exceptions import MiteruException
 from miteru.models import (
