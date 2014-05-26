@@ -332,7 +332,9 @@ class Tweet:
         if key is None:
             raise MiteruException('認証に失敗しました。', False)
 
-        expected_signature = hmac.new(key.key, query, hashlib.sha1).hexdigest()
+        expected_signature = hmac.new(
+            key.key.encode('utf8'), query.encode('utf8'), hashlib.sha1
+        ).hexdigest()
         if signature != expected_signature:
             raise MiteruException('認証に失敗しました。', False)
 
