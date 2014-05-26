@@ -201,9 +201,6 @@ class TwitterAPI:
         return key
 
     def post(self, user, text):
-        if len(text) > 140:
-            raise MiteruException('Tweet is too long', False)
-
         resp = requests.post(
             url='https://api.twitter.com/1.1/statuses/update.json',
             data=json.dumps({'status': text}),
