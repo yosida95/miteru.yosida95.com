@@ -115,7 +115,7 @@ def post(request):
         return tweet.to_dict()
 
     try:
-        csrf_token = request.params.get('csrf_token')
+        csrf_token = request.POST.get('csrf_token')
         if csrf_token != request.session.get_csrf_token():
             raise MiteruException('不正なリクエストです。', False)
 
