@@ -2,7 +2,6 @@
 
 import hashlib
 import hmac
-import json
 import random
 import re
 import string
@@ -203,7 +202,7 @@ class TwitterAPI:
     def post(self, user, text):
         resp = requests.post(
             url='https://api.twitter.com/1.1/statuses/update.json',
-            data=json.dumps({'status': text}),
+            data={'status': text},
             auth=self.get_authorized_client(user.access_key,
                                             user.access_secret))
 
