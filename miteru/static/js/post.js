@@ -41,8 +41,10 @@
             data['csrf_token'] = form.csrf_token.value;
 
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/post', false);
-            xhr.onstatuschange = function() {
+            xhr.open('POST', '/post', true);
+            xhr.setRequestHeader('Content-Type',
+                                 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function() {
                 if (xhr.readyState != 4) {
                     return;
                 }
