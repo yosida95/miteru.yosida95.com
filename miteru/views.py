@@ -97,7 +97,7 @@ def authenticate(request):
 def token(request):
     # for v2
     return HTTPFound(location=request.route_path('post', _query={
-        'keyid': request.GET.get('token', ''),
+        'keyid': request.GET.get('id', ''),
         'url': request.GET.get('url', ''),
         'title': request.GET.get('title', '')
     }))
