@@ -12,7 +12,7 @@
         queryString = Object.keys(query).map(function(key) {
             var value = query[key];
             return encodeURIComponent(key) + '=' + encodeURIComponent(value);
-        }).join('&amp;');
+        }).join('&');
 
     window.addEventListener('message', function(message) {
         if (message.origin === origin && message.data === 'onload') {

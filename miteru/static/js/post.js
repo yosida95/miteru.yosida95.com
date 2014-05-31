@@ -17,7 +17,7 @@
                 qs = this.encode(params);
 
             var query = {};
-            location.search.substring(1).split('&amp;').map(function(kv) {
+            location.search.substring(1).split('&').map(function(kv) {
                 var kv = kv.split('='),
                     key = decodeURIComponent(kv[0]),
                     value = decodeURIComponent(kv[1]);
@@ -28,7 +28,7 @@
             }
 
             params['signed_keys'] = keys.join(',');
-            params['signature'] = CryptoJS.HmacSHA1(qs, this.secret);
+            params['signature'] = CryptoJS.HmacSHA1(qs, this.secret).toString();
             return params;
         };
 

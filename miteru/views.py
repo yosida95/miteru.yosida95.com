@@ -121,7 +121,7 @@ def post(request):
 
         signed_query = '&'.join(map(
             lambda key: '{0}={1}'.format(
-                key, quote(request.POST.get(key, ''), safe='')),
+                key, quote(request.POST.get(key, ''), safe='~()*!.\'')),
             request.POST.get('signed_keys', '').split(',')
         ))
         user = tweet.authenticate(request.POST.get('keyid', ''),
@@ -132,7 +132,7 @@ def post(request):
     except MiteruException as why:
         successful, redo = False, why.retryable
         message = '投稿に失敗しました: {0!s}'.format(why.message)
-    except BaseException as why:
+    except BaseException:
         successful, redo = False, False
         message = '投稿に失敗しました'
     else:
