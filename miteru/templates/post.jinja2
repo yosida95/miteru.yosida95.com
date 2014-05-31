@@ -4,27 +4,17 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <meta http-equiv="Content-Style-Type" content="text/css" />
-        <link href="/static/post.css" rel="stylesheet" />
+        <link href="{{ request.static_path('miteru:static/post.css') }}" rel="stylesheet" />
         <meta http-equiv="content-script-type" content="text/javascript" />
-        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-        <meta name="copyright" content="Copyright (C) yosida95 All Rights Reserved." />
+        <script type="text/javascript" src="{{ request.static_path('miteru:static/js/hmac-sha1.js') }}"></script>
+        <script type="text/javascript" src="{{ request.static_path('miteru:static/js/post.js') }}"></script>
+        <meta name="copyright" content="(C) 2012 yosida95" />
         <meta name="Author" content="yosida95" />
         <meta name="robots" content="None" />
         <title>見てるなう(仮)</title>
-        <script type="text/javascript">
-            $(document).ready(function(){$("#post_form input[type='text']").focus(function(){if(this.value==this.title){this.value="";}this.style.color='#000';}).blur(function(){if(this.value==""){this.value=this.title;this.style.color='#808080';}else{this.style.color='#000';}}).css('color','#808080')[0].focus();$("#post_form").submit(function(){$('#post_form')[0].comment.value=($('#post_form')[0].comment.value==$('#post_form')[0].comment.title)?"":$('#post_form')[0].comment.value;$('#message').css('color','#000');$('#message').html('投稿中&hellip;&hellip;');$('#post_form').hide();$.post('/post',$('#post_form').serialize(),function(data){if(data.redo){$('#message').css('color','#f00');$('#message').text(data.message);$('#post_form').show();}else{if(!data.result){$('#message').css('color','#f00');}else{$('#message').css('color','#000');}$('#message').text(data.message);setTimeout(window.close,1500);}},'json');return false;});});
-        </script>
     </head>
     <body>
         <h1>見てるなう(仮)</h1>
-        {% if request.scheme == "http" %}
-        <div class="alert alert-success alert-block">
-            <strong style="text-align: center;">TLS通信対応のお知らせ</strong>
-            <p>この度、見てるなう(仮)はTLS通信による通信内容の暗号化に対応いたしました。<br />
-            暗号化を希望される場合は、見てるなう(仮)トップページからログインして、新しいブックマークレットを取得してください。</p>
-        </div>
-        {% endif %}
-
         <div id="message"></div>
         <form id="post_form" method="post" action="{{ request.route_path('post') }}">
             {% if title %}
@@ -32,14 +22,12 @@
             {% else %}
             <p>{{ url }}</p>
             {% endif %}
-            <input type="hidden" name="token" value="{{ token }}" />
-            <input type="hidden" name="token_hashed" value="{{ token_hashed }}" />
             <input type="hidden" name="title" value="{{ title }}" />
             <input type="hidden" name="url" value="{{ url }}" />
             <input type="hidden" name="csrf_token" value="{{ request.session.get_csrf_token() }}" />
             <input type="text" name="comment" title="コメント" value="コメント" />
             <button type="submit" value="投稿">投稿</button>
         </form>
-        <p>Copyright (C) <a href="https://yosida95.com/">yosida95</a> All Rights Reserved.</a>
+        <p>&copy; 2012 <a href="https://yosida95.com/">yosida95</a></p>
     </body>
 </html>

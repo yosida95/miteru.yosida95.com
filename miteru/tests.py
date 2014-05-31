@@ -1,102 +1,99 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import unittest
 
-from pyramid import testing
-from pyramid.i18n import TranslationStringFactory
+from miteru.models import (
+    LEADER,
+    Tweet,
+)
 
-_ = TranslationStringFactory('miteru')
 
+class TestTweet(unittest.TestCase):
 
-class PostBuilderTest(unittest.TestCase):
+    HTTP = 'http://example.com/'
+    HTTPS = 'https://example.com/'
 
-    def _get_target_instance(self, *args, **kwargs):
-        from .models import PostBuilder
-        return PostBuilder(*args, **kwargs)
-
-    def test_get_shortened_url_length(self):
-        inst = self._get_target_instance(
-            u'http://example.com/', u'example', u'comment'
-        )
-
+    def test_build_01(self):
+        inst = Tweet('title', self.HTTP, 'comment')
         self.assertEqual(
-            inst._get_shortened_url_length(u'http://www.google.com/'), 22
-        )
-        self.assertEqual(
-            inst._get_shortened_url_length(u'https://www.google.com/'), 23
-        )
-        self.assertEqual(
-            inst._get_shortened_url_length(u'www.google.com'), 22
+            inst.build(),
+            'comment - title : http://example.com/ #miteru'
         )
 
-    def test_get_text_length(self):
-        inst = self._get_target_instance(
-            u'http://example.com/', u'example', u'comment'
+    def test_build_02(self):
+        inst = Tweet('', self.HTTP, 'comment')
+        self.assertEqual(
+            inst.build(),
+            'comment - http://example.com/ #miteru'
         )
 
-        self.assertEqual(inst._get_text_length(u'hello'), 5)
+    def test_build_03(self):
+        inst = Tweet(' '.join(self.HTTP for _ in range(5)), self.HTTP,
+                     'comment')
         self.assertEqual(
-            inst._get_text_length(u'hello http://www.google.com/'), 28
-        )
-        self.assertEqual(
-            inst._get_text_length(u'hello https://www.google.com/'), 29
-        )
-        self.assertEqual(
-            inst._get_text_length(u'hello http://www.google.com/hello'), 28
-        )
-        self.assertEqual(inst._get_text_length(
-            u'http://www.google.com/ http://wwww.yahoo.com/'
-        ), 45)
-
-    def test_round_text(self):
-        inst = self._get_target_instance(
-            u'http://example.com/', u'example', u'comment'
-        )
-        check = lambda length, correct: self.assertEqual(inst._round_text(
-            u'abcdefg http://example.com/ hijklmn https://example.com/', length
-        ), correct)
-
-        check(5, u'abcd…')
-        check(30, u'abcdefg …')
-        check(38, u'abcdefg http://example.com/ hijklm…')
-        check(61, u'abcdefg http://example.com/ hijklmn …')
-        check(62, u'abcdefg http://example.com/ hijklmn https://example.com/')
-        check(100, u'abcdefg http://example.com/ hijklmn https://example.com/')
-
-    def test_build(self):
-        inst = self._get_target_instance(
-            u'http://example.com/', u'example', u'comment'
-        )
-        self.assertEqual(
-            inst.build(), u'comment - example : http://example.com/ #miteru'
-        )
-
-        inst = self._get_target_instance(
-            u'http://example.com/', u'example', u'comment' * 14
-        )
-        self.assertEqual(
-            inst.build(), u'%s - exampl : http://example.com/ #miteru' % (
-                u'comment' * 14
+            inst.build(),
+            u'comment - {title} {leader} : http://example.com/ #miteru'.format(
+                title=' '.join(self.HTTP for _ in range(4)),
+                leader=LEADER,
             )
         )
-        self.assertEqual(len(inst.build()), 137)
 
-        inst = self._get_target_instance(
-            u'http://example.com/', u'example' * 20
-        )
+    def test_build_04(self):
+        inst = Tweet(
+            '{0} extra title'.format(' '.join(self.HTTP for _ in range(4))),
+            self.HTTP, 'comment')
         self.assertEqual(
-            inst.build(), u'%s : http://example.com/ #miteru' % (
-                u'example' * 15 + u'ex'
+            inst.build(),
+            u'comment - {title} extr{leader} : '
+            u'http://example.com/ #miteru'.format(
+                title=' '.join(self.HTTP for _ in range(4)),
+                leader=LEADER,
             )
         )
-        self.assertEqual(len(inst.build()), 137)
 
-        inst = self._get_target_instance(
-            u'http://example.com/', u'', u'comment'
-        )
-        self.assertEqual(inst.build(), u'comment - http://example.com/ #miteru')
+    def test_build_05(self):
+        from miteru.exceptions import MiteruException
+        inst = Tweet('', self.HTTP,
+                     ' '.join(self.HTTP for _ in range(5)))
 
-        inst = self._get_target_instance(
-            u'http://example.com/', u'', u''
+        with self.assertRaises(MiteruException):
+            inst.build()
+
+    def test_build_06(self):
+        inst = Tweet('example.com', self.HTTP, 'comment')
+        self.assertEqual(
+            inst.build(),
+            'comment - example.com : http://example.com/ #miteru'
         )
-        self.assertEqual(inst.build(), u'http://example.com/ #miteru')
+
+    def test_build_07(self):
+        title = (
+            'http://example.com/ verylongverylongverylong'  # 47
+            'verylongverylongverylongverylongverylong'  # 40
+            'verylongverylongverylongverylongverylong'  # 40
+        )  # 127
+        # 140 - (22(HTTP) + 7(comment) + 7(hashtag) + 7(spaces)) = 97
+        inst = Tweet(title, self.HTTP, 'comment')
+        self.assertEqual(
+            inst.build(),
+            u'comment - {title}{leader} : {url} #miteru'.format(
+                title=title[:-31],
+                leader=LEADER,
+                url=self.HTTP,
+            )
+        )
+
+    def test_build_08(self):
+        inst = Tweet(
+            '{0} extra title {1}'.format(
+                ' '.join(self.HTTP for _ in range(4)), self.HTTP
+            ),
+            self.HTTP, 'comment')
+        self.assertEqual(
+            inst.build(),
+            u'comment - {title} extr{leader} : '
+            u'http://example.com/ #miteru'.format(
+                title=' '.join(self.HTTP for _ in range(4)),
+                leader=LEADER,
+            )
+        )

@@ -1,8 +1,0 @@
-syntax: glob
-
-*.pyc
-*.pid
-*.log
-.cache/*
-*.egg-info
-*.egg

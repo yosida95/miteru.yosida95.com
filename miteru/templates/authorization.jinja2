@@ -3,7 +3,11 @@
 {% block body %}
             <h1>ログイン完了</h1>
 
-            <p><a href="javascript:(function(){var win=window.open('{{ request.route_url('token')  }}?id={{ id }}&url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title),null,'width=530,height=300,menubar=no,toolbar=no,scrollbars=yes');window.addEventListener('message',function(message){if(message.origin=='{{ request.host_url }}' && message.data=='onload'){message.source.postMessage('{{ key }}','{{ request.host_url }}');}},false);})();">[見てるなう]</a></p>
-            <textarea>javascript:(function(){var win=window.open('{{ request.route_url('token')  }}?id={{ id }}&url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title),null,'width=530,height=300,menubar=no,toolbar=no,scrollbars=yes');window.addEventListener('message',function(message){if(message.origin=='{{ request.host_url }}' && message.data=='onload'){message.source.postMessage('{{ key }}','{{ request.host_url }}');}},false);})();</textarea>
-            <p>上のリンク（ブックマークレット）をお使いのブラウザのブックマークバーにドラッグアンドドロップしていただくことで、いつでもどこでも見てるなうできます。</p>
+            <h2>Bookmarklet</h2>
+            <p><a href="javascript: {{ minified }}">[見てるなう]</a></p>
+            <p>上のリンク (ブックマークレット) をお使いのブラウザのブックマークバーにドラッグアンドドロップしていただくことで、いつでもどこでも見てるなうできます。<br />
+                <img src="{{ request.static_path('miteru:static/img/bookmarklet.png') }}" alt="Bookmarklet" width="400" /></p>
+
+            <h2>Raw Bookmarklet Source Code</h2>
+            <pre><code>{{ raw }}</code></pre>
 {% endblock %}
