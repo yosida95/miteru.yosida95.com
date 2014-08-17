@@ -68,7 +68,7 @@ def login(request):
     return HTTPFound(location=twitter.get_authorization_url(request_token[0]))
 
 
-@view_config(route_name='authorization', request_method='GET',
+@view_config(route_name='authorize', request_method='GET',
              renderer='authorization.jinja2')
 def authenticate(request):
     request_token, request_secret = request.session[REQUEST_TOKEN_SESSION_KEY]

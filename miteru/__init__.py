@@ -35,7 +35,7 @@ def main(global_config, **settings):
 
     config.add_route('homepage', '/')
     config.add_route('login', '/login')
-    config.add_route('authorization', '/authorization')
+    config.add_route('authorize', '/authorize')
     config.add_route('token', '/token')
     config.add_route('post', '/post')
     config.scan()
