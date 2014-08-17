@@ -2,6 +2,7 @@
 
 import re
 import json
+from urllib.parse import quote
 
 from jinja2 import (
     Environment,
@@ -19,7 +20,6 @@ from slimit import minify
 from miteru.compat import (
     htmlentitydefs,
     unichr,
-    urlencode,
 )
 from miteru.exceptions import MiteruException
 from miteru.models import (
@@ -97,7 +97,7 @@ def authenticate(request):
 def token(request):
     # for v2
     return HTTPFound(location=request.route_path('post', _query={
-        'keyid': request.GET.get('token', ''),
+        'keyid': request.GET.get('id', ''),
         'url': request.GET.get('url', ''),
         'title': request.GET.get('title', '')
     }))
@@ -115,12 +115,13 @@ def post(request):
         return tweet.to_dict()
 
     try:
-        csrf_token = request.params.get('csrf_token')
+        csrf_token = request.POST.get('csrf_token')
         if csrf_token != request.session.get_csrf_token():
             raise MiteruException('不正なリクエストです。', False)
 
-        signed_query = urlencode(map(
-            lambda key: (key, request.POST.get(key, '')),
+        signed_query = '&'.join(map(
+            lambda key: '{0}={1}'.format(
+                key, quote(request.POST.get(key, ''), safe='~()*!.\'')),
             request.POST.get('signed_keys', '').split(',')
         ))
         user = tweet.authenticate(request.POST.get('keyid', ''),
@@ -129,9 +130,9 @@ def post(request):
 
         tweet.do(user)
     except MiteruException as why:
-        successful, redo = False, why.retriable
+        successful, redo = False, why.retryable
         message = '投稿に失敗しました: {0!s}'.format(why.message)
-    except BaseException as why:
+    except BaseException:
         successful, redo = False, False
         message = '投稿に失敗しました'
     else:

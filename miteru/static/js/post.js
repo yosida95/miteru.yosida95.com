@@ -9,7 +9,7 @@
         Client.prototype.encode = function(params) {
             return Object.keys(params).map(function(key) {
                 return key + '=' + encodeURIComponent(params[key]);
-            }).join('&amp;');
+            }).join('&');
         };
 
         Client.prototype.sign = function(params) {
@@ -17,10 +17,10 @@
                 qs = this.encode(params);
 
             var query = {};
-            location.search.split('&').map(function(kv) {
+            location.search.substring(1).split('&').map(function(kv) {
                 var kv = kv.split('='),
-                    key = decodeURIComponent(k[0]),
-                    value = decodeURIComponent(k[1]);
+                    key = decodeURIComponent(kv[0]),
+                    value = decodeURIComponent(kv[1]);
                 query[key] = value;
             });
             if ('keyid' in query) {
@@ -28,7 +28,7 @@
             }
 
             params['signed_keys'] = keys.join(',');
-            params['signature'] = CryptoJS.HmacSHA1(qs, this.secret);
+            params['signature'] = CryptoJS.HmacSHA1(qs, this.secret).toString();
             return params;
         };
 
@@ -41,8 +41,10 @@
             data['csrf_token'] = form.csrf_token.value;
 
             var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/post', false);
-            xhr.onstatuschange = function() {
+            xhr.open('POST', '/post', true);
+            xhr.setRequestHeader('Content-Type',
+                                 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function() {
                 if (xhr.readyState != 4) {
                     return;
                 }
@@ -81,9 +83,10 @@
             }
         }, false);
 
-        form.addEventListener('submit', function() {
-            var message = document.getElementById('message');
+        form.addEventListener('submit', function(evt) {
+            evt.preventDefault();  // cancel form submitting
 
+            var message = document.getElementById('message');
             if (this.comment.value === this.comment.title) {
                 this.comment.value = '';
             }
@@ -113,7 +116,7 @@
                 message.appendChild(document.createTextNode(body.message));
             });
 
-            return false; // cancel form submitting
+            return false;
         }, false);
 
         comment.focus();

@@ -2,7 +2,6 @@
 
 import hashlib
 import hmac
-import json
 import random
 import re
 import string
@@ -201,12 +200,9 @@ class TwitterAPI:
         return key
 
     def post(self, user, text):
-        if len(text) > 140:
-            raise MiteruException('Tweet is too long', False)
-
         resp = requests.post(
             url='https://api.twitter.com/1.1/statuses/update.json',
-            data=json.dumps({'status': text}),
+            data={'status': text},
             auth=self.get_authorized_client(user.access_key,
                                             user.access_secret))
 
@@ -220,7 +216,12 @@ class TwitterAPI:
             raise MiteruException(
                 'TwitterAPI returns {0}'.format(resp.status_code), False)
         else:
-            raise MiteruException(','.join(errors), False)
+            errormsg = ', '.join(
+                '{0}: {1}'.format(error['code'], error['message'])
+                for error in errors
+                if set(error.keys()).issuperset({'message', 'code'})
+            )
+            raise MiteruException(errormsg, False)
 
 
 class Tweet:
@@ -332,7 +333,9 @@ class Tweet:
         if key is None:
             raise MiteruException('認証に失敗しました。', False)
 
-        expected_signature = hmac.new(key.key, query, hashlib.sha1).hexdigest()
+        expected_signature = hmac.new(
+            key.key.encode('utf8'), query.encode('utf8'), hashlib.sha1
+        ).hexdigest()
         if signature != expected_signature:
             raise MiteruException('認証に失敗しました。', False)
 
