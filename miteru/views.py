@@ -71,26 +71,28 @@ def login(request):
 @view_config(route_name='authorize', request_method='GET',
              renderer='authorization.jinja2')
 def authenticate(request):
-    request_token, request_secret = request.session[REQUEST_TOKEN_SESSION_KEY]
-
-    if request.GET.get('oauth_token') != request_token:
-        raise HTTPUnauthorized()
-
     try:
+        request_token, request_secret =\
+            request.session[REQUEST_TOKEN_SESSION_KEY]
+        if request.GET['oauth_token'] != request_token:
+            raise ValueError()
+
         twitter = TwitterAPI()
         key = twitter.authorize(request_token, request_secret,
-                                request.GET.get('oauth_verifier', ''))
+                                request.GET['oauth_verifier'])
+    except (KeyError, TypeError):
+        return HTTPFound(location=request.route_path('homepage'))
     except ValueError:
         raise HTTPUnauthorized()
-    except:
-        raise
-        raise HTTPServerError()
 
-    bookmarklet =\
-        jinja2.get_template('bookmarklet.js').render(key=key, request=request)
-    return dict(
-        raw=bookmarklet,
-        minified=minify(bookmarklet, mangle=True, mangle_toplevel=True))
+    template = jinja2.get_template('bookmarklet.js')
+    bookmarklet = template.render(key=key, request=request)
+    minified = minify(bookmarklet,
+                      mangle=True,
+                      mangle_toplevel=True)
+
+    return dict(raw=bookmarklet,
+                minified=minified)
 
 
 @view_config(route_name='token', request_method='GET')
