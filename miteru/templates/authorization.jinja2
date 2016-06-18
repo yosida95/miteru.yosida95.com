@@ -5,8 +5,15 @@
 
             <h2>Bookmarklet</h2>
             <p><a href="javascript: {{ minified }}">[見てるなう]</a></p>
-            <p>上のリンク (ブックマークレット) をお使いのブラウザのブックマークバーにドラッグアンドドロップしていただくことで、いつでもどこでも見てるなうできます。<br />
-                <img src="{{ request.static_path('miteru:static/img/bookmarklet.png') }}" alt="Bookmarklet" width="400" /></p>
+
+            <h2>ご利用方法</h2>
+            <iframe width="640" height="480" src="https://www.youtube.com/embed/6MA3EZwz1ck?rel=0" frameborder="0" allowfullscreen></iframe>
+            <ol>
+                <li>Twitter で<a href="{{ request.route_path('login') }}">ログイン</a></li>
+                <li>[見てるなう]リンクをブックマークバーにドラッグアンドドロップ</li>
+                <li>好きなページでブックマークバーの[見てるなう]をクリック</li>
+                <li>コメントを入力して Twitter に投稿</li>
+            </ol>
 
             <h2>Raw Bookmarklet Source Code</h2>
             <pre><code>{{ raw }}</code></pre>

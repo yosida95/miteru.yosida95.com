@@ -10,14 +10,13 @@
         <div class="container">
             <div class="row">
                 <div class="span12">
-                    <h2>使用方法</h2>
+                    <h2>ご利用方法</h2>
+                    <iframe width="640" height="480" src="https://www.youtube.com/embed/6MA3EZwz1ck?rel=0" frameborder="0" allowfullscreen></iframe>
                     <ol>
-                        <li>Twitterアカウントで<a href="{{ request.route_path('login') }}">ログイン</a>する</li>
-                        <li>認証完了ページに表示されるブックマークレットをブックマークバーにドラッグアンドドロップで保存する<br />
-                            <img src="{{ request.static_path('miteru:static/img/bookmarklet.png') }}" alt="Bookmarklet" width="400" /></li>
-                        <li>Twitterで共有したいウェブページでこのブックマークレットをクリックする</li>
-                        <li>表示される投稿画面で、必要に応じてコメントを入力して、投稿ボタンを押す<br />
-                            <img src="{{ request.static_path('miteru:static/img/post_example.png') }}" alt="投稿画面例" /></li>
+                        <li>Twitter で<a href="{{ request.route_path('login') }}">ログイン</a></li>
+                        <li>[見てるなう]リンクをブックマークバーにドラッグアンドドロップ</li>
+                        <li>好きなページでブックマークバーの[見てるなう]をクリック</li>
+                        <li>コメントを入力して Twitter に投稿</li>
                     </ol>
                 </div>
             </div>
@@ -38,7 +37,7 @@
                 <div class="span12">
                     <h2>その他</h2>
                     <p>開発経緯まとめは私のブログエントリにまとめています。<br />
-                    <a href="http://yosida95.hatenablog.com/entry/20120428/1335624934">見てるなう(仮)を作った</a></p>
+                    <a href="https://yosida95.com/2012/04/28/235534.html">見てるなう(仮)を作った</a></p>
                 </div>
             </div>
 {% endblock %}
