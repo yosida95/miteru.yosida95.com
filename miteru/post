@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link href="/static/post.css" rel="stylesheet" />
+    <title>見てるなう(仮)</title>
+    <script type="text/javascript">
+      function strlen(value) {
+        return [...value].reduce((acc, c) => acc + (c.codePointAt(0) >= 0x80 ? 2 : 1), 0);
+      }
+
+      function trim(value, max) {
+        if (strlen(value) <= max) {
+          return value;
+        }
+
+        let count = 0, i = 0;
+        for (; i < value.length && count <= max - 2; i++) {
+          count += value.codePointAt(i) >= 0x80 ? 2 : 1;
+        }
+        return `${value.substring(0, i - 1)}…`;
+      }
+
+      (function(){
+        const
+          search = new URLSearchParams(location.search),
+          url = search.get("url") ?? "";
+          title = search.get("title") ?? "",
+          prefix = "（コメント） - ",
+          // HTTPS URL always consumes 23 chars regardless of the actual length.
+          maxLength = 280 - strlen(`${prefix} : https://example.net/abc #miteru`);
+
+        const intent = new URL(`https://twitter.com/intent/tweet`);
+        if (title === "") {
+          intent.searchParams.append("text", `${prefix}${url} #miteru`);
+        } else {
+          intent.searchParams.append("text", `${prefix}${trim(title, maxLength)} : ${url} #miteru`);
+        }
+        setTimeout(() => window.location.replace(intent.toString()), 2000);
+      })()
+    </script>
+  </head>
+  <body>
+    <h1>見てるなう(仮)</h1>
+    <p>見てるなう(仮)は Twitter API の提供終了に伴いサービスを終了しました。</p>
+    <p>Twitter 投稿画面にリダイレクトします。</p>
+    <p>&copy; 2012 <a href="https://yosida95.com/">yosida95</a></p>
+  </body>
+</html>
