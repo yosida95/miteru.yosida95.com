@@ -26,11 +26,12 @@
           search = new URLSearchParams(location.search),
           url = search.get("url") ?? "";
           title = search.get("title") ?? "",
-          prefix = "（コメント） - ",
+          prefix = " - ",
+          commentLen = 50,
           // HTTPS URL always consumes 23 chars regardless of the actual length.
-          maxLength = 280 - strlen(`${prefix} : https://example.net/abc #miteru`);
+          maxLength = 280 - commentLen - strlen(`${prefix} : https://example.net/abc #miteru`);
 
-        const intent = new URL(`https://twitter.com/intent/tweet`);
+        const intent = new URL("https://twitter.com/intent/tweet");
         if (title === "") {
           intent.searchParams.append("text", `${prefix}${url} #miteru`);
         } else {
